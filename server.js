@@ -37,15 +37,30 @@ app.route('/').get((req, res) => {
   
 });
 
+myDB(async client =>{
+  const myDataBase = await client.db('database').collection('users');
+
+  app.route('/').get((req, res) => {
+    res.render('index', {
+      title: 'Connected to the database',
+      message: 'Please login'
+    });
+  });
 passport.serializeUser((user, done) => {
   done(null, user._id);
 })
 
 passport.deserializeUser((id, done) => {
-  // Even though the block is commented out, you should use new ObjectID(id) for when we add the database
-  // new ObjectID(id)
-  done(null, null);
-})
+  myDataBase.findOne({_id: new ObjectID(id)}, (err, doc) => {
+    done(null, doc);
+  });
+});
+
+}).catch(e => {
+  app.route('/').get((req, res) => {
+    res.render('index', {title: e, message: 'Unable to connect to database' });
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
