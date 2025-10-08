@@ -7,7 +7,7 @@ const fccTesting = require('./freeCodeCamp/fcctesting.js');
 const cors = require('cors');
 const session = require('express-session')
 const passport = require('passport')
-const { ObjectId } = require('mongodb');
+const { MongoClient, ObjectID } = require('mongodb');
 
 const app = express();
 
@@ -42,6 +42,8 @@ passport.serializeUser((user, done) => {
 })
 
 passport.deserializeUser((id, done) => {
+  // Even though the block is commented out, you should use new ObjectID(id) for when we add the database
+  // new ObjectID(id)
   done(null, null);
 })
 
