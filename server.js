@@ -32,31 +32,42 @@ app.use('/public', express.static(process.cwd() + '/public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.route('/').get((req, res) => {
-  // Change the response to render the Pug template
-  res.render('index', {title: 'Hello', message: 'Please log in'});
-  
-});
-
-myDB(async client =>{
+myDB(async client => {
   const myDataBase = await client.db('database').collection('users');
 
+  // Be sure to change the title
   app.route('/').get((req, res) => {
+    // Change the response to render the Pug template
     res.render('index', {
-      title: 'Connected to the database',
+      title: 'Connected to Database',
       message: 'Please login'
     });
   });
-passport.serializeUser((user, done) => {
-  done(null, user._id);
-})
 
-passport.deserializeUser((id, done) => {
-  console.log(new ObjectId(id));
-  done(null, null);
-})
+  // Serialization and deserialization here...
+  passport.serializeUser((user, done) => {
+    done(null, user._id);
+  });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
+  passport.deserializeUser(async (id, done) => {
+    console.log(new ObjectId(id));
+    try {
+      const doc = await myDataBase.findOne({_id: new ObjectId(id)});
+      done(null, doc);
+    } catch (err) {
+      done(err, null);
+    }
+  });
+
+  // Be sure to add this...
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`);
+  });
+
+}).catch(e => {
+  app.route('/').get((req, res) => {
+    res.render('index', { title: e, message: 'Unable to connect to database' });
+  });
 });
+// app.listen out here...
