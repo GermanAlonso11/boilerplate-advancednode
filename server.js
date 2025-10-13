@@ -38,6 +38,15 @@ app.route('/').get((req, res) => {
   
 });
 
+myDB(async client =>{
+  const myDataBase = await client.db('database').collection('users');
+
+  app.route('/').get((req, res) => {
+    res.render('index', {
+      title: 'Connected to the database',
+      message: 'Please login'
+    });
+  });
 passport.serializeUser((user, done) => {
   done(null, user._id);
 })
