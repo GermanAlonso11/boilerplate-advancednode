@@ -64,7 +64,7 @@ myDB(async client => {
   app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);
   });
-
+6
 }).catch(e => {
   app.route('/').get((req, res) => {
     res.render('index', { title: e, message: 'Unable to connect to database' });
