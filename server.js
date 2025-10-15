@@ -7,14 +7,13 @@ const fccTesting = require("./freeCodeCamp/fcctesting.js");
 const cors = require("cors");
 const session = require("express-session");
 const passport = require("passport");
-// const mongo = require("mongodb").MongoClient;
-// const ObjectId = require("mongodb").ObjectId;
-// const LocalStrategy = require("passport-local");
-// const bcrypt = require('bcrypt');
 const routes = require("./routes.js");
 const auth = require("./auth.js");
 
 const app = express();
+
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 
 app.use(cors());
 
@@ -43,6 +42,13 @@ myDB(async (client) => {
 
   routes(app, myDataBase);
   auth(app, myDataBase);
+
+  let currentUsers = 0;
+  io.on('connection', (socket) => {
+    ++currentUsers;
+    io.emit('user count', { currentUsers });
+    console.log('A user has connected');
+  });
 
   // Be sure to add this...
   const PORT = process.env.PORT || 3000;
