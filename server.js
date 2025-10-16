@@ -14,11 +14,32 @@ const app = express();
 
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
+const MongoStore = require('connect-mongo')(session);
+const cookieParser = require('cookie-parser');
+const URI = process.env.MONGO_URI;
+const store = new MongoStore({ url: URI });
+const passportSocketIo = require('passport.socketio');
 
 app.use(cors());
 
 app.set("view engine", "pug");
 app.set("views", "./views/pug");
+
+function onAuthorizeSuccess(data, accept) {
+    console.log('User authorized successfully');
+    accept(null, true);
+  }
+
+  function onAuthorizeFail(data, message, error, accept) {
+    console.log('User authorization failed');
+    if (error) accept(new Error(message));
+  }
+
+  function onAuthorizeFail(data, message, error, accept) {
+    if (error) throw new Error(message);
+    console.log('failed connection to socket.io:', message);
+    accept(null, false);
+  }
 
 app.use(
   session({
@@ -26,11 +47,23 @@ app.use(
     resave: true,
     saveUninitialized: true,
     cookie: { secure: false },
+    store: store,
+    key: 'express.sid'
   })
 );
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+io.use(passportSocketIo.authorize({
+  cookieParser: cookieParser,
+  key: 'express.sid',
+  secret: process.env.SESSION_SECRET,
+  store: store,
+  success: onAuthorizeSuccess,
+  fail: onAuthorizeFail
+}));
+
 
 fccTesting(app); // For fCC testing purposes
 app.use("/public", express.static(process.cwd() + "/public"));
@@ -46,8 +79,27 @@ myDB(async (client) => {
   let currentUsers = 0;
   io.on('connection', (socket) => {
     ++currentUsers;
-    io.emit('user count', { currentUsers });
+    io.emit('user', { 
+        username: socket.request.user.username,
+        currentUsers,
+        connected: true
+     });
     console.log('A user has connected');
+
+    socket.on('chat message', (message) => {
+      io.emit('chat message', {username: socket.request.user.username, message: message});
+    });
+
+    socket.on('disconnect', () => {
+      --currentUsers;
+      io.emit('user', { 
+        username: socket.request.user.username,
+        currentUsers,
+        connected: false
+       });
+      console.log('A user has disconnected');
+    });
+
   });
 
   // Be sure to add this...
